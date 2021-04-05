@@ -1,69 +1,53 @@
-import config
 import os
-
-from datetime import date
-from flask import Flask, jsonify, send_from_directory
-from flask.json import JSONEncoder
-from flask_cors import CORS
-#TODO: Check if CORS is properly set in vue
-
-
-class CustomJSONEncoder(JSONEncoder):
-    """Use ISO 8601 for dates"""
-
-    def default(self, obj):  # noqa: E0202
-        try:
-            if isinstance(obj, date):
-                return obj.isoformat()
-            iterable = iter(obj)
-        except TypeError:
-            pass
-        else:
-            return list(iterable)
-        return JSONEncoder.default(self, obj)
-
+from flask import Flask, request, jsonify
+from flask_pymongo import PyMongo
 
 app = Flask(__name__)
-app.json_encoder = CustomJSONEncoder
-app.config["SECRET_KEY"] = config.flask_secret_key
-CORS(app)
 
+app.config["MONGO_URI"] = 'mongodb://' + os.environ['MONGODB_USERNAME'] + ':' + os.environ['MONGODB_PASSWORD'] + '@' + os.environ['MONGODB_HOSTNAME'] + ':27017/' + os.environ['MONGODB_DATABASE']
 
-@app.route("/api/file/<string:filename>")
-def images_get(filename):
-    return send_from_directory(config.image_upload_folder, filename)
+mongo = PyMongo(ap)
+db = mongo.db
 
+@app.route('/')
+def index():
+    return jsonify(
+        status=True,
+        message='Welcome to the Dockerized Flask MongoDB app!'
+    )
 
-from views.authentication import *  # noqa
-from views.posts import *  # noqa
-from views.subvues import *  # noqa
-from views.users import *  # noqa
+@app.route('/todo')
+def todo():
+    _todos = db.todo.find()
 
-import errors  # noqa
+    item = {}
+    data = []
+    for todo in _todos:
+        item = {
+            'id': str(todo['_id']),
+            'todo': todo['todo']
+        }
+        data.append(item)
 
+    return jsonify(
+        status=True,
+        data=data
+    )
 
-@app.errorhandler(404)
-def page_not_found(e):
-    return jsonify({
-        "error": "API endpoint not found"
-    }), 404
+@app.route('/todo', methods=['POST'])
+def createTodo():
+    data = request.get_json(force=True)
+    item = {
+        'todo': data['todo']
+    }
+    db.todo.insert_one(item)
 
+    return jsonify(
+        status=True,
+        message='To-do saved successfully!'
+    ), 201
 
-@app.errorhandler(500)
-@app.errorhandler(405)
-def internal_server_error(e):
-    return jsonify({
-        "error": "Internal server error"
-    }), 500
-
-
-@app.errorhandler(413)
-def request_entity_too_large(e):
-    return jsonify({
-        "error": "To large (max. 1 MB)"
-    }), 413
-
-
+# python main running app, when you do flask run
 if __name__ == "__main__":
     ENVIRONMENT_DEBUG = os.environ.get("APP_DEBUG", True)
     ENVIRONMENT_PORT = os.environ.get("APP_PORT", 5000)

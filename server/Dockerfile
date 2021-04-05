@@ -1,6 +1,6 @@
 FROM python:3.6.8-alpine3.9
 
-LABEL MAINTAINER="Rik Bose <rbose@knox.edu>"
+LABEL MAINTAINER="Shahim Shaar <sshaar@knox.edu>"
 
 ENV GROUP_ID=1000 \
     USER_ID=1000
