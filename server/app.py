@@ -6,8 +6,8 @@ app = Flask(__name__)
 
 app.config["MONGO_URI"] = 'mongodb://' + os.environ['MONGODB_USERNAME'] + ':' + os.environ['MONGODB_PASSWORD'] + '@' + os.environ['MONGODB_HOSTNAME'] + ':27017/' + os.environ['MONGODB_DATABASE']
 
-mongo = PyMongo(ap)
-db = mongo.db
+db = MongoEngine()
+db.init_app(app)
 
 @app.route('/')
 def index():
